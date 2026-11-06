@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  googleId  String   @unique
+  name      String
+  email     String   @unique
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  senders          Sender[]
+  emails           Email[]
+  slackIntegration SlackIntegration?
+
+  @@index([googleId])
+  @@map("users")
+}
+
+model Sender {
+  id               String   @id @default(uuid())
+  userId           String
+  email            String
+  name             String
+  hourlyLimit      Int      @default(200)
+  minimumSendDelay Int      @default(2000) // milliseconds
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emails Email[]
+
+  // A user cannot have two senders with the same email address
+  @@unique([userId, email])
+  @@index([userId])
+  @@map("senders")
+}
+
+model Email {
+  id             String      @id @default(uuid())
+  userId         String
+  senderId       String
+  recipient      String
+  subject        String
+  body           String      @db.Text
+  scheduledAt    DateTime
+  sentAt         DateTime?
+  status         EmailStatus @default(SCHEDULED)
+  idempotencyKey String      @unique
+  queueJobId     String?
+  errorMessage   String?
+  previewUrl     String?
+  retryCount     Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sender Sender @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([senderId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([idempotencyKey])
+  @@map("emails")
+}
+
+model SlackIntegration {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  accessToken  String   // AES-256 encrypted at rest
+  teamId       String
+  teamName     String?
+  connected    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("slack_integrations")
+}
+
+enum EmailStatus {
+  SCHEDULED
+  PROCESSING
+  SENT
+  FAILED
+  RESCHEDULED
+  CANCELLED
+}
