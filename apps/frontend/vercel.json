@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://reach-inbox-assignment-ikg0.onrender.com/api/$1"
+    },
+    {
+      "source": "/auth/(.*)",
+      "destination": "https://reach-inbox-assignment-ikg0.onrender.com/auth/$1"
+    }
+  ]
+}
