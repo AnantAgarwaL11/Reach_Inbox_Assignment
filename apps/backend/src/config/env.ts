@@ -12,7 +12,7 @@ dotenv.config({
 // failing silently later when the missing value is first used.
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().default(3001),
+  PORT: z.coerce.number().int().positive().default(3001),
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
 
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),

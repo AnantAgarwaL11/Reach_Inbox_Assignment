@@ -162,15 +162,13 @@ Wait until you see:
 API server listening on port 3001
 ```
 
-On the very first run it will also print something like:
+On the very first run, the server creates an Ethereal test account in the background:
 ```
-Created new Ethereal test account { user: 'abc123@ethereal.email', pass: 'xxxxxx' }
-Add these to your .env to reuse this account across restarts:
-  ETHEREAL_USER=abc123@ethereal.email
-  ETHEREAL_PASS=xxxxxx
+Created new Ethereal test account { user: 'abc123@ethereal.email' }
+Set ETHEREAL_USER and ETHEREAL_PASS to reuse an account across restarts.
 ```
 
-**Important:** Copy those ETHEREAL_USER and ETHEREAL_PASS values into your `.env` file right now. This makes sure all sent emails go to the same test inbox across restarts.
+SMTP verification runs in the background and does not prevent the API from starting. If SMTP is unavailable, the server logs a warning and actual email sends will still report/retry their errors. Configure a working SMTP account for reliable delivery.
 
 ---
 

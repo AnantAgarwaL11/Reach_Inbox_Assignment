@@ -10,9 +10,8 @@ import { logger } from './utils/logger';
 // Order matters:
 //   1. Database (Prisma needs to connect before any query)
 //   2. Redis (needed for sessions and queues)
-//   3. Email transport (creates or reuses Ethereal account)
-//   4. Elasticsearch (creates index if missing — non-fatal if ES is down)
-//   5. HTTP server
+//   3. Start SMTP and Elasticsearch initialization without blocking the API
+//   4. HTTP server
 
 async function start(): Promise<void> {
   logger.info('Starting ReachInbox API server...');
@@ -25,17 +24,15 @@ async function start(): Promise<void> {
 
   await initEmailTransport();
 
-  // Elasticsearch is non-critical — log the error but don't crash
-  try {
-    await ensureEmailIndex();
-  } catch (err) {
-    logger.warn('Elasticsearch unavailable at startup — email indexing disabled', { err });
-  }
-
-  const server = app.listen(env.PORT, () => {
-    logger.info(`API server listening on port ${env.PORT}`);
-    logger.info(`Bull Board: http://localhost:${env.PORT}/admin/queues`);
+  const port = process.env.PORT ? Number(process.env.PORT) : 3001;
+  const server = app.listen(port, '0.0.0.0', () => {
+    logger.info(`API server listening on port ${port}`);
+    logger.info(`Bull Board: http://localhost:${port}/admin/queues`);
     logger.info(`Environment: ${env.NODE_ENV}`);
+  });
+
+  void ensureEmailIndex().catch((err) => {
+    logger.warn('Elasticsearch unavailable at startup — email indexing may be delayed', { err });
   });
 
   // ─── Graceful Shutdown ────────────────────────────────────────────────────
